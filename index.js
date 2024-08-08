@@ -2,6 +2,8 @@ const express = require("express");
 const { connection } = require("./connectMongo");
 const cors = require("cors");
 const { addVisitor } = require("./services/addVisitor");
+const nodemailer = require("nodemailer");
+const { getVisitor } = require("./services/getVisitor");
 const app = express();
 require("dotenv").config();
 const port = process.env.PORT || 8080;
@@ -14,10 +16,29 @@ connection(process.env.uri)
   });
 
 app.use(express.json());
-app.use(cors());
+app.options("*", cors());
 
-app.get("/", (req, res) => {
-  res.send("Success baby");
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.PASSWORD,
+  },
+});
+
+app.get("/visitor", async (req, res) => {
+  try {
+    const data = await getVisitor();
+    res.send({
+      status: "Success",
+      data: data,
+    });
+  } catch (e) {
+    res.send({
+      status: "Error",
+      data: e,
+    });
+  }
 });
 
 app.post("/form", async (req, res) => {
@@ -36,13 +57,23 @@ app.post("/form", async (req, res) => {
       comments,
       services
     );
+    //  console.log(req.body);
+    // const data=JSON.stringify(req.body);
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: "sohomsaha361@gmail.com",
+      subject: `Enqiry from ${name}`,
+      text: `Name: ${name}\nEmail: ${email}\nDate: ${date}\nPhone Number: ${contact}\nEnquiry Services: ${services}\nComments: ${comments}`,
+    };
+
+    await transporter.sendMail(mailOptions);
     res.send({
       status: "success",
       data: visitor,
     });
   } catch (err) {
     res.send({
-      status: "success",
+      status: "ERROR",
       data: err,
     });
   }
