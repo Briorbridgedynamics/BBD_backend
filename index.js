@@ -1,9 +1,13 @@
 const express = require("express");
 const { connection } = require("./connectMongo");
 const cors = require("cors");
+const bcrypt = require('bcrypt');
+
 const { addVisitor } = require("./services/addVisitor");
 const nodemailer = require("nodemailer");
 const { getVisitor } = require("./services/getVisitor");
+const { authenticate } = require("./middleware/auth");
+const { addAdmin } = require("./services/addAdmin");
 const app = express();
 require("dotenv").config();
 const port = process.env.PORT || 8080;
@@ -26,7 +30,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-app.get("/visitor", async (req, res) => {
+app.use("/visitor",authenticate, async (req, res) => {
   try {
     const data = await getVisitor();
     res.send({
@@ -37,6 +41,36 @@ app.get("/visitor", async (req, res) => {
     res.send({
       status: "Error",
       data: e,
+    });
+  }
+});
+
+app.post("/admin",async (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  try {
+    const saltRounds = 10;
+    const pass = await bcrypt.hash(password, saltRounds);
+    const admin = await addAdmin(
+      email,
+      pass
+    );
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: "sohomsaha361@gmail.com",
+      subject: `New Admin Added ${email}`,
+      text: `APPROVAL PENDING`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.send({
+      status: "success",
+      data: admin,
+    });
+  } catch (err) {
+    res.send({
+      status: "ERROR",
+      data: err,
     });
   }
 });
