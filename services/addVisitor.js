@@ -2,13 +2,14 @@ const { mongoose } = require("mongoose");
 const visitorSchema = require("../models/visitor");
 
 
-const addVisitor = async (name,email,date,contact,comments="",services=[])=>{
+const addVisitor = async (name,email,date,contact,business,comments="",services=[])=>{
     try{
         const visitor=await visitorSchema.create({
             name:name,
             email:email,
             date:date,
             contact:contact,
+            business:business,
             comments:comments,
             services:services
         });

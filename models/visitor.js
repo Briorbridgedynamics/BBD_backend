@@ -18,6 +18,10 @@ const VisitorSchema =new mongoose.Schema(
         type:Number,
         required:true,
     },
+    business:{
+        type:String,
+        required:true
+    },
     comments:{
         type:String,
         required:false

@@ -1,7 +1,7 @@
 const express = require("express");
 const { connection } = require("./connectMongo");
 const cors = require("cors");
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
 const { addVisitor } = require("./services/addVisitor");
 const nodemailer = require("nodemailer");
@@ -20,7 +20,7 @@ connection(process.env.uri)
   });
 
 app.use(express.json());
-app.options("*", cors());
+app.use(cors())
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -30,7 +30,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-app.use("/visitor",authenticate, async (req, res) => {
+app.use("/visitor", authenticate, async (req, res) => {
   try {
     const data = await getVisitor();
     res.send({
@@ -44,17 +44,16 @@ app.use("/visitor",authenticate, async (req, res) => {
     });
   }
 });
-
-app.post("/admin",async (req, res) => {
+app.get("/",(req,res)=>{
+  res.send("Welcome to server of BBD");
+})
+app.post("/admin", async (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   try {
     const saltRounds = 10;
     const pass = await bcrypt.hash(password, saltRounds);
-    const admin = await addAdmin(
-      email,
-      pass
-    );
+    const admin = await addAdmin(email, pass);
     const mailOptions = {
       from: process.env.EMAIL,
       to: "sohomsaha361@gmail.com",
@@ -80,6 +79,7 @@ app.post("/form", async (req, res) => {
   const email = req.body.email;
   const date = req.body.date;
   const contact = req.body.contact;
+  const business = req.body.business;
   const comments = req.body.comments;
   const services = req.body.services;
   try {
@@ -88,6 +88,7 @@ app.post("/form", async (req, res) => {
       email,
       date,
       contact,
+      business,
       comments,
       services
     );
@@ -95,12 +96,30 @@ app.post("/form", async (req, res) => {
     // const data=JSON.stringify(req.body);
     const mailOptions = {
       from: process.env.EMAIL,
-      to: "sohomsaha361@gmail.com",
+      to: "briorbridgedynamics@gmail.com",
       subject: `Enqiry from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\nDate: ${date}\nPhone Number: ${contact}\nEnquiry Services: ${services}\nComments: ${comments}`,
+      text: `Name: ${name}\nBusiness Info:${business}\nEmail: ${email}\nDate: ${date}\nPhone Number: ${contact}\nEnquiry Services: ${services}\nComments: ${comments}`,
+    };
+    const enquiryMail = {
+      from: "briorbridgedynamics@gmail.com",
+      to: email,
+      subject: `Thank you for your interest in Brior Bridge Dynamics`,
+      text: `
+            Dear ${name},
+
+            We appreciate you taking the time to enquire about our services. Your interest in what we offer is encouraging.
+            We are eager to learn more about your specific needs and discuss how our solutions can benefit you.
+            We will get back to you at the earliest.
+
+            Thank you again for your interest. We look forward to the opportunity to work with you.
+            Please feel free to contact us at briorbridgedynamics@gmail.com.
+
+            Sincerely,
+            Team of Brior Bridge Dynamics`,
     };
 
     await transporter.sendMail(mailOptions);
+    await transporter.sendMail(enquiryMail);
     res.send({
       status: "success",
       data: visitor,
